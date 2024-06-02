@@ -1,22 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container, Input, Button, VStack, HStack, Heading, List, ListItem, Text, Checkbox } from "@chakra-ui/react";
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://lkryrewptosftkwcigwl.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrcnlyZXdwdG9zZnRrd2NpZ3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxNzMzOTg0MSwiZXhwIjoyMDMyOTE1ODQxfQ._2W_lNdP732oSYXTdqEedo1rrhVHldrPZam393tj2CI';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Index = () => {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
 
-  const handleAddTodo = () => {
-    if (newTodo.trim() !== "") {
-      setTodos([...todos, { text: newTodo, completed: false }]);
-      setNewTodo("");
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*');
+    if (error) {
+      console.error("Error fetching todos:", error);
+    } else {
+      setTodos(data);
     }
   };
 
-  const handleToggleComplete = (index) => {
-    const updatedTodos = todos.map((todo, i) => 
-      i === index ? { ...todo, completed: !todo.completed } : todo
-    );
-    setTodos(updatedTodos);
+  const handleAddTodo = async () => {
+    if (newTodo.trim() !== "") {
+      const { data, error } = await supabase
+        .from('todos')
+        .insert([{ text: newTodo, completed: false }]);
+      if (error) {
+        console.error("Error adding todo:", error);
+      } else {
+        setTodos([...todos, ...data]);
+        setNewTodo("");
+      }
+    }
+  };
+
+  const handleToggleComplete = async (index) => {
+    const todo = todos[index];
+    const { data, error } = await supabase
+      .from('todos')
+      .update({ completed: !todo.completed })
+      .eq('id', todo.id);
+    if (error) {
+      console.error("Error updating todo:", error);
+    } else {
+      const updatedTodos = todos.map((t, i) => 
+        i === index ? { ...t, completed: !t.completed } : t
+      );
+      setTodos(updatedTodos);
+    }
   };
 
   return (
@@ -34,7 +70,7 @@ const Index = () => {
         </HStack>
         <List spacing={3} width="100%">
           {todos.map((todo, index) => (
-            <ListItem key={index} p={2} borderWidth="1px" borderRadius="md" display="flex" alignItems="center">
+            <ListItem key={todo.id} p={2} borderWidth="1px" borderRadius="md" display="flex" alignItems="center">
               <Checkbox 
                 isChecked={todo.completed} 
                 onChange={() => handleToggleComplete(index)} 
