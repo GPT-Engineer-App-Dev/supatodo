@@ -1,20 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Container, Input, Button, VStack, HStack, Heading, List, ListItem, Text, Checkbox } from "@chakra-ui/react";
+
+import { supabase } from "../App.jsx";
 
 const Index = () => {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
 
-  const handleAddTodo = () => {
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    const { data } = await supabase.from('todos').select('*');
+    setTodos(data);
+  };
+
+  const handleAddTodo = async () => {
     if (newTodo.trim() !== "") {
-      setTodos([...todos, { text: newTodo, completed: false }]);
+      const { data } = await supabase.from('todos').insert([{ text: newTodo, completed: false }]);
+      setTodos([...todos, ...data]);
       setNewTodo("");
     }
   };
 
-  const handleToggleComplete = (index) => {
+  const handleToggleComplete = async (index) => {
+    const todo = todos[index];
+    const { data } = await supabase
+      .from('todos')
+      .update({ completed: !todo.completed })
+      .eq('id', todo.id);
     const updatedTodos = todos.map((todo, i) => 
-      i === index ? { ...todo, completed: !todo.completed } : todo
+      i === index ? data[0] : todo
     );
     setTodos(updatedTodos);
   };
@@ -34,7 +51,7 @@ const Index = () => {
         </HStack>
         <List spacing={3} width="100%">
           {todos.map((todo, index) => (
-            <ListItem key={index} p={2} borderWidth="1px" borderRadius="md" display="flex" alignItems="center">
+            <ListItem key={todo.id} p={2} borderWidth="1px" borderRadius="md" display="flex" alignItems="center">
               <Checkbox 
                 isChecked={todo.completed} 
                 onChange={() => handleToggleComplete(index)} 
