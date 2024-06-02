@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Container, Input, Button, VStack, HStack, Heading, List, ListItem, Text } from "@chakra-ui/react";
+import { Container, Input, Button, VStack, HStack, Heading, List, ListItem, Text, Checkbox } from "@chakra-ui/react";
 
 const Index = () => {
   const [todos, setTodos] = useState([]);
@@ -7,9 +7,16 @@ const Index = () => {
 
   const handleAddTodo = () => {
     if (newTodo.trim() !== "") {
-      setTodos([...todos, newTodo]);
+      setTodos([...todos, { text: newTodo, completed: false }]);
       setNewTodo("");
     }
+  };
+
+  const handleToggleComplete = (index) => {
+    const updatedTodos = todos.map((todo, i) => 
+      i === index ? { ...todo, completed: !todo.completed } : todo
+    );
+    setTodos(updatedTodos);
   };
 
   return (
@@ -27,8 +34,13 @@ const Index = () => {
         </HStack>
         <List spacing={3} width="100%">
           {todos.map((todo, index) => (
-            <ListItem key={index} p={2} borderWidth="1px" borderRadius="md">
-              <Text>{todo}</Text>
+            <ListItem key={index} p={2} borderWidth="1px" borderRadius="md" display="flex" alignItems="center">
+              <Checkbox 
+                isChecked={todo.completed} 
+                onChange={() => handleToggleComplete(index)} 
+                mr={3}
+              />
+              <Text as={todo.completed ? "s" : "span"}>{todo.text}</Text>
             </ListItem>
           ))}
         </List>
